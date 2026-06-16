@@ -15,14 +15,14 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔥 DEINE FIREBASE KONFIG */
+/* 🔥 DEINE FIREBASE KONFIG (DEINE DATEN) */
 const firebaseConfig = {
-  apiKey: "DEIN_KEY",
-  authDomain: "DEIN_DOMAIN",
-  projectId: "DEIN_PROJECT",
-  storageBucket: "DEIN_BUCKET",
-  messagingSenderId: "DEIN_ID",
-  appId: "DEIN_APPID"
+  apiKey: "AIzaSyAFUUvPvzj6SmLjrDQK9Tz1LzNPW17dZXI",
+  authDomain: "inventar-appjw.firebaseapp.com",
+  projectId: "inventar-appjw",
+  storageBucket: "inventar-appjw.appspot.com",
+  messagingSenderId: "156223083174",
+  appId: "1:156223083174:web:599dbed39d7d2a69bc9a67"
 };
 
 /* INIT */
@@ -30,11 +30,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let items = [];
-
-/* =======================
-   🔐 LOGIN SYSTEM
-======================= */
+/* ---------------- LOGIN ---------------- */
 
 window.register = async function () {
 
@@ -45,7 +41,6 @@ window.register = async function () {
 
   await createUserWithEmailAndPassword(auth, email, password);
 
-  alert("Account erstellt");
 };
 
 window.login = async function () {
@@ -63,31 +58,24 @@ window.logout = async function () {
   await signOut(auth);
 };
 
-/* =======================
-   🔄 AUTO LOGIN (WICHTIG)
-======================= */
+/* ---------------- AUTO LOGIN ---------------- */
 
 onAuthStateChanged(auth, user => {
 
   if (user) {
-
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("app").style.display = "block";
-
     load();
-
   } else {
-
     document.getElementById("loginBox").style.display = "block";
     document.getElementById("app").style.display = "none";
-
   }
 
 });
 
-/* =======================
-   📦 INVENTAR
-======================= */
+/* ---------------- INVENTAR ---------------- */
+
+let items = [];
 
 window.addItem = async function () {
 
@@ -107,9 +95,7 @@ window.addItem = async function () {
   load();
 };
 
-/* =======================
-   📥 LOAD DATA
-======================= */
+/* ---------------- LOAD ---------------- */
 
 async function load() {
 
@@ -122,9 +108,7 @@ async function load() {
   render();
 }
 
-/* =======================
-   🖥 RENDER
-======================= */
+/* ---------------- RENDER ---------------- */
 
 function render() {
 
@@ -154,4 +138,5 @@ function render() {
     }
 
   });
+
 }
