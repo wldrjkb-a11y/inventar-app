@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Inventar Pro</title>
+
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+
+</head>
+
+<body>
+
+<h2>📦 Inventar Pro</h2>
+
+<input id="name" placeholder="Artikelname">
+
+<select id="cat"></select>
+
+<input id="stock" type="number" placeholder="Bestand">
+<input id="min" type="number" placeholder="Mindestbestand">
+
+<button onclick="addItem()">Hinzufügen</button>
+
+<hr>
+
+<h3>📦 Bestand</h3>
+<div id="list"></div>
+
+<h3>🛒 Einkaufsliste</h3>
+<div id="shop"></div>
+
+<script type="module" src="app.js"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>
