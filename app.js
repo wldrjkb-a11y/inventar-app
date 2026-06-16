@@ -1,142 +1,301 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
+  signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore,
   collection,
   addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
   getDocs
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔥 DEINE FIREBASE KONFIG (DEINE DATEN) */
 const firebaseConfig = {
-  apiKey: "AIzaSyAFUUvPvzj6SmLjrDQK9Tz1LzNPW17dZXI",
-  authDomain: "inventar-appjw.firebaseapp.com",
-  projectId: "inventar-appjw",
-  storageBucket: "inventar-appjw.appspot.com",
-  messagingSenderId: "156223083174",
-  appId: "1:156223083174:web:599dbed39d7d2a69bc9a67"
+  apiKey: "AIzaSyBOsl91g7DZftPfhKqnWnm93EovYfWkV7U",
+  authDomain: "inventar-59590.firebaseapp.com",
+  projectId: "inventar-59590",
+  storageBucket: "inventar-59590.firebasestorage.app",
+  messagingSenderId: "424010164002",
+  appId: "1:424010164002:web:62b24aa0e0448032b7277b"
 };
 
-/* INIT */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* ---------------- LOGIN ---------------- */
+const authSection = document.getElementById("authSection");
+const appSection = document.getElementById("appSection");
 
-window.register = async function () {
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const authMessage = document.getElementById("authMessage");
 
-  let username = document.getElementById("username").value;
-  let password = document.getElementById("password").value;
+const loginBtn = document.getElementById("loginBtn");
+const registerBtn = document.getElementById("registerBtn");
+const resetBtn = document.getElementById("resetBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-  let email = username + "@app.local";
+const nameInput = document.getElementById("nameInput");
+const categoryInput = document.getElementById("categoryInput");
+const quantityInput = document.getElementById("quantityInput");
+const minInput = document.getElementById("minInput");
+const addBtn = document.getElementById("addBtn");
+const searchInput = document.getElementById("searchInput");
 
-  await createUserWithEmailAndPassword(auth, email, password);
+const itemsList = document.getElementById("itemsList");
+const shoppingList = document.getElementById("shoppingList");
 
-};
-
-window.login = async function () {
-
-  let username = document.getElementById("username").value;
-  let password = document.getElementById("password").value;
-
-  let email = username + "@app.local";
-
-  await signInWithEmailAndPassword(auth, email, password);
-
-};
-
-window.logout = async function () {
-  await signOut(auth);
-};
-
-/* ---------------- AUTO LOGIN ---------------- */
-
-onAuthStateChanged(auth, user => {
-
-  if (user) {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    load();
-  } else {
-    document.getElementById("loginBox").style.display = "block";
-    document.getElementById("app").style.display = "none";
-  }
-
-});
-
-/* ---------------- INVENTAR ---------------- */
-
+let currentUser = null;
 let items = [];
+let categories = [];
+let unsubscribeItems = null;
+let unsubscribeCategories = null;
 
-window.addItem = async function () {
-
-  let name = document.getElementById("name").value;
-  let cat = document.getElementById("cat").value;
-  let stock = parseInt(document.getElementById("stock").value) || 0;
-  let min = parseInt(document.getElementById("min").value) || 0;
-
-  await addDoc(collection(db, "items"), {
-    name,
-    cat,
-    stock,
-    min,
-    uid: auth.currentUser.uid
-  });
-
-  load();
-};
-
-/* ---------------- LOAD ---------------- */
-
-async function load() {
-
-  const snap = await getDocs(collection(db, "items"));
-
-  items = snap.docs
-    .map(d => ({ id: d.id, ...d.data() }))
-    .filter(i => i.uid === auth.currentUser.uid);
-
-  render();
+function showMessage(message) {
+  authMessage.textContent = message;
 }
 
-/* ---------------- RENDER ---------------- */
+function getItemsCollection() {
+  return collection(db, "users", currentUser.uid, "items");
+}
 
-function render() {
+function getCategoriesCollection() {
+  return collection(db, "users", currentUser.uid, "categories");
+}
 
-  let list = document.getElementById("list");
-  let shop = document.getElementById("shop");
+registerBtn.addEventListener("click", async () => {
+  try {
+    await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+  } catch (error) {
+    showMessage(error.message);
+  }
+});
 
-  list.innerHTML = "";
-  shop.innerHTML = "";
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+  } catch (error) {
+    showMessage(error.message);
+  }
+});
 
-  items.sort((a, b) => a.name.localeCompare(b.name));
+resetBtn.addEventListener("click", async () => {
+  if (!emailInput.value) {
+    showMessage("Inserisci prima la tua email.");
+    return;
+  }
 
-  items.forEach(i => {
+  try {
+    await sendPasswordResetEmail(auth, emailInput.value);
+    showMessage("Email di recupero inviata.");
+  } catch (error) {
+    showMessage(error.message);
+  }
+});
 
-    list.innerHTML += `
-      <div class="item">
-        <b>${i.name}</b><br>
-        Bestand: ${i.stock} / Min: ${i.min}
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+
+ if (user) {
+  authSection.classList.add("hidden");
+  appSection.classList.remove("hidden");
+
+  createDefaultCategories();
+  listenToCategories();
+  listenToItems();
+} else {
+    authSection.classList.remove("hidden");
+    appSection.classList.add("hidden");
+
+    if (unsubscribeItems) unsubscribeItems();
+    items = [];
+    renderItems();
+  }
+});
+
+function listenToItems() {
+  const q = query(getItemsCollection(), orderBy("name"));
+
+  unsubscribeItems = onSnapshot(q, snapshot => {
+    items = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+
+    renderItems();
+  });
+}
+
+addBtn.addEventListener("click", async () => {
+  const name = nameInput.value.trim();
+  const category = categoryInput.value.trim() || "Senza categoria";
+  const quantity = Number(quantityInput.value);
+  const min = Number(minInput.value);
+
+  if (!name) return;
+
+  await addDoc(getItemsCollection(), {
+    name,
+    category,
+    quantity: isNaN(quantity) ? 0 : quantity,
+    min: isNaN(min) ? 0 : min,
+    createdAt: serverTimestamp()
+  });
+
+  nameInput.value = "";
+  categoryInput.value = "";
+  quantityInput.value = "";
+  minInput.value = "";
+});
+
+searchInput.addEventListener("input", renderItems);
+
+function renderItems() {
+  const search = searchInput.value.toLowerCase();
+
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(search) ||
+    item.category.toLowerCase().includes(search)
+  );
+
+  itemsList.innerHTML = "";
+  shoppingList.innerHTML = "";
+
+  if (filteredItems.length === 0) {
+    itemsList.innerHTML = `<p class="empty">Nessun prodotto trovato.</p>`;
+  }
+
+  filteredItems.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <div class="item-title">${item.name}</div>
+      <div class="item-meta">
+        Categoria: ${item.category} · Quantità: ${item.quantity} · Minimo: ${item.min}
+      </div>
+      <div class="item-actions">
+        <button data-action="plus">+</button>
+        <button data-action="minus">-</button>
+        <button data-action="edit">Modifica</button>
+        <button data-action="delete" class="danger">Elimina</button>
       </div>
     `;
 
-    if (i.stock <= i.min) {
-      shop.innerHTML += `
-        <div class="item">
-          🛒 ${i.name}
-        </div>
-      `;
-    }
+    div.querySelector('[data-action="plus"]').addEventListener("click", () => changeQuantity(item, 1));
+    div.querySelector('[data-action="minus"]').addEventListener("click", () => changeQuantity(item, -1));
+    div.querySelector('[data-action="edit"]').addEventListener("click", () => editItem(item));
+    div.querySelector('[data-action="delete"]').addEventListener("click", () => deleteItem(item));
 
+    itemsList.appendChild(div);
   });
 
+  const shoppingItems = items.filter(item => item.quantity < item.min);
+
+  if (shoppingItems.length === 0) {
+    shoppingList.innerHTML = `<p class="empty">Niente da comprare.</p>`;
+  } else {
+    shoppingItems.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="item-title">${item.name}</div>
+        <div class="item-meta">
+          Hai: ${item.quantity} · Minimo: ${item.min}
+        </div>
+      `;
+      shoppingList.appendChild(div);
+    });
+  }
+}
+
+async function changeQuantity(item, amount) {
+  const itemRef = doc(db, "users", currentUser.uid, "items", item.id);
+
+  await updateDoc(itemRef, {
+    quantity: Math.max(0, item.quantity + amount)
+  });
+}
+
+async function editItem(item) {
+  const newName = prompt("Nome prodotto:", item.name);
+  if (newName === null) return;
+
+  const newCategory = prompt("Categoria:", item.category);
+  if (newCategory === null) return;
+
+  const newQuantity = prompt("Quantità:", item.quantity);
+  if (newQuantity === null) return;
+
+  const newMin = prompt("Scorta minima:", item.min);
+  if (newMin === null) return;
+
+  const itemRef = doc(db, "users", currentUser.uid, "items", item.id);
+
+  await updateDoc(itemRef, {
+    name: newName.trim(),
+    category: newCategory.trim() || "Senza categoria",
+    quantity: Number(newQuantity),
+    min: Number(newMin)
+  });
+}
+
+async function deleteItem(item) {
+  const confirmDelete = confirm(`Eliminare "${item.name}"?`);
+  if (!confirmDelete) return;
+
+  const itemRef = doc(db, "users", currentUser.uid, "items", item.id);
+  await deleteDoc(itemRef);
+}
+async function createDefaultCategories() {
+
+  console.log("CREATE DEFAULT CATEGORIES");
+
+  const snapshot = await getDocs(getCategoriesCollection());
+
+  if (!snapshot.empty) return;
+
+  console.log("NESSUNA CATEGORIA TROVATA, LE CREO");
+
+  const defaults = [
+    { name: "Bagno", emoji: "🛁" },
+    { name: "Alimentari", emoji: "🛒" },
+    { name: "Pulizie", emoji: "🧹" },
+    { name: "Farmacia", emoji: "💊" },
+    { name: "Altro", emoji: "📦" }
+  ];
+
+  for (const category of defaults) {
+    await addDoc(getCategoriesCollection(), category);
+  }
+}
+function listenToCategories() {
+
+  unsubscribeCategories = onSnapshot(
+    getCategoriesCollection(),
+    snapshot => {
+
+      categories = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log("Categorie:", categories);
+    }
+  );
 }
